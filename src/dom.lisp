@@ -23,6 +23,8 @@
 ;;;        was not correct processing null from JS
 ;;;     2) Some functions may raised error condition by cause
 ;;;        returned dynamical array data type from JS.
+;;;               note:  07.03.2017 - its wrong.
+;;;                      See dom-childs-collection comments
 ;;;;    3) The above two points are valid for (Nodes:
 ;;;        childs,parent,sibling node and nodes collections).
 ;;;        It requires additional testing
@@ -180,6 +182,19 @@
 ;;;
 ;;; => [object HTMLDivElement]
 ;;;
+;;; note: 1) Raise error condition with message "Out of range."
+;;;       2) Do not use
+;;;          If need a text element, then appendChild will do fine.
+;;;             (dom-append (aref *out9 4)
+;;;                         (dom-append (dom-create "div") "Teeeetttt"))
+;;;
+;;;          Important:
+;;;          If the dom element has such descendants
+;;;          Jscl will not work with this list ("Out of range." Error)
+;;;          07.03.2016
+;;;
+
+;;; DO NOT USE
 (defun dom-create-text-node (str)
     (#j:window:document:createTextNode str))
 
@@ -194,9 +209,12 @@
 ;;;
 ;;; (dom-remove (dom-create "div"))
 ;;;
+;;; Time 0.02 ms
+;;; todo: performance
 (defun dom-remove (elem)
-    (let* ((var (oget elem "parentNode")))
-        (funcall ((oget var "removeChild" "bind") var elem ))))
+    (if (not (js-null-p (oget elem "parentNode")))
+        (let* ((var (oget elem "parentNode")))
+            (funcall ((oget var "removeChild" "bind") var elem )))))
 
 ;;; dom-add-class
 ;;;
@@ -236,6 +254,8 @@
 ;;;
 ;;; parent.appendChild(children)
 ;;;
+;;; now return parent with new childs
+;;;
 (defun dom-append (parent &rest children)
     (mapc
      (lambda (e)
@@ -243,7 +263,8 @@
                 (funcall ((oget parent "appendChild" "bind" ) parent e)))
                (t
                 (dom-set-inner-html  parent (concat (dom-get-inner-html parent) e)))))
-     children))
+     children)
+    parent)
 
 ;;;
 ;;; Synonim for dom-append
@@ -358,8 +379,15 @@
 ;;;    (dom-parent-node *chk)
 ;;;     => [object HTMLDivElement]
 ;;;
+;;; Right form:
+;;;
+;;;    (if (not (js-null-p (dom-parent-node div)))
+;;;           .... div has parent
+;;;           .... div hasnt parent)
+;;;
+;;;
 (defun dom-parent-node (element)
-    (oget element "parentNode") )
+    (oget element "parentNode"))
 
 
 ;;; dom-element-node-name
@@ -387,7 +415,7 @@
 ;;; dom-element-child-count
 ;;;
 ;;; (dom-child-element-count pid)
-;;; => 0 or collection count
+;;; => 0 or collection size
 ;;;
 (defun dom-element-child-count (element)
     (oget element "childElementCount"))
@@ -398,10 +426,55 @@
 ;;; Get dom element childs collection
 ;;;
 ;;; Return nil, if element hasnt children
-;;; or list of childrens dom elements
+;;; or array of childrens elements
 ;;;
 ;;; Note: JSCL dont properly processing dynamical array from js
+;;;       07.03.2017  Its wrong
 ;;;
+;;;  The reason in the textNode (there is such a tricky element)
+;;;
+;;; Next case
+;;;
+;;;       div
+;;;         |
+;;;         span-1
+;;;         |
+;;;         span-2
+;;;         |
+;;;         text
+;;;         |
+;;;         span-3
+;;;
+;;;       Its wrong dom-structure
+;;;
+;;;       (dom-element-child-collection div)
+;;;        => Error: Out of range.
+;;;
+;;;       div
+;;;         |
+;;;         span-1
+;;;         |
+;;;         span-2
+;;;         |
+;;;         div
+;;;         | |
+;;;         | text
+;;;         |
+;;;         span-3
+;;;
+;;;        Its correct
+;;;
+;;;        (dom-element-childs-collection div)
+;;;        => #(#<JS-OBJECT [object HTMLSpanElement]>
+;;;             #<JS-OBJECT [object HTMLSpanElement]>
+;;;             #<JS-OBJECT [objectHTMLDivElement]>
+;;;             #<JS-OBJECT [object HTMLSpanElement]>)
+;;;
+;;;
+
+
+#|
+
 (defun dom-element-childs-collection (element)
     (let ((count (oget element "childElementCount"))
           (res))
@@ -412,6 +485,17 @@
                    (push (oget element "childNodes" (string (1+ i))) res))
                (reverse res))
               (t res))))
+|#
+
+;;;
+;;;  It causes an error if the collection has a nodeText elements
+;;;  => ERROR: Out of range.
+;;;
+
+(defun dom-element-childs-collection (element)
+    (oget element "childNodes"))
+
+
 
 ;;; todo: node.children
 
@@ -421,7 +505,7 @@
 ;;;  (dom-element-first-child pid)
 ;;;  => [object HTMLDivElement]
 ;;;
-;;; Note: ERROR Condition if pid hast children
+;;; Note: ERROR Condition if pid hasnt children
 ;;;
 (defun dom-element-first-child (element)
     (oget element "firstElementChild"))
@@ -432,7 +516,7 @@
 ;;;  (dom-element-last-child pid)
 ;;;  => [object HTMLDivElement]
 ;;;
-;;; Note: ERROR Condition if pid hast children
+;;; Note: ERROR Condition if pid hasnt children
 ;;;
 (defun dom-element-last-child (element)
     (oget element "lastElementChild"))
