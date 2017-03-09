@@ -110,8 +110,24 @@
 
 ;;; window.document.getElementById
 ;;;
+;;; Error condition if div with id does not exist
+;;; ERROR: Cannot use 'in' operator to search for 'multiple-value' in null
+;;;
+;;; Error handling, if need:
+;;;
+;;;    (handler-case (dom-get-element-by-id id) (error (err) nil))
+;;;
+
 (defun dom-get-element-by-id (id)
     (#j:window:document:getElementById id))
+
+
+;;; window.document.getElementsByClassName
+;;;
+(defun dom-get-elements-by-class (id)
+    (#j:window:document:getElementsByClassName id))
+
+
 
 ;;; elm.setAttribute(val)
 ;;;
@@ -298,9 +314,10 @@
 ;;;
 ;;;   (defparameter div-control
 ;;;           (dom-create "div" (pair '("id" "class")
+;;;                                   '("control-id" "control default-font"))))
 ;;;
 ;;;   (defparameter div-br (dom-create "br"))
-;;;                                  '("control-id" "control default-font"))))
+;;;
 ;;;   (defparameter btn-run
 ;;;             (dom-create-button "Run"
 ;;;                   (pair '("id" "class")
@@ -317,7 +334,13 @@
 ;;;   (dom-mount checkbox-title checkbox-el (dom-create-text-node unit-name))
 ;;;   (dom-mount (dom-get-body) checkbox-title div-br div-control)
 ;;;  =>
+;;;       Error: Out a range  (see comments for dom-create-text-node)
+;;;   workaround
 ;;;
+;;;   (dom-mount (dom-get-bode)
+;;;         (dom-append checkboc-title unit-name)
+;;;         div-br
+;;;         div-control)
 ;;;
 ;;;
 (defun dom-create (tagname &optional props callbacks)
@@ -473,20 +496,6 @@
 ;;;
 
 
-#|
-
-(defun dom-element-childs-collection (element)
-    (let ((count (oget element "childElementCount"))
-          (res))
-
-        (cond ((> count 0)
-               (do ((i 0  (1+ i)))
-                   ((= i count) i)
-                   (push (oget element "childNodes" (string (1+ i))) res))
-               (reverse res))
-              (t res))))
-|#
-
 ;;;
 ;;;  It causes an error if the collection has a nodeText elements
 ;;;  => ERROR: Out of range.
@@ -552,9 +561,9 @@
 ;;; Note: ERROR condition
 (defun dom-insert-after (element new-element)
     (funcall ((oget element "parentNode" "insertBefore" "bind")
-              (dom-element-parent-node element)
+              (oget element "parentNode")
               new-element
-              (dom-element-next-sibling element) )))
+              (oget element "nextSibling") )))
 
 
 ;;; dom-insert-top
