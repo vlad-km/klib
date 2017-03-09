@@ -550,7 +550,7 @@
 ;;;
 (defun dom-insert-before (element new-element)
     (funcall ((oget element "parentNode" "insertBefore" "bind")
-              (dom-element-parent-node element)
+              (oget element "parentNode")
               new-element
               element)))
 
@@ -575,7 +575,7 @@
     (funcall ((oget element "insertBefore" "bind")
               element
               new-element
-              (dom-element-first-child element))))
+              (oget element "firstElementChild"))))
 
 
 ;;; dom-insert
