@@ -36,7 +36,7 @@
 
 (export '(tws-open))
 (defun tws-open (&key (url "ws://127.0.0.1:40000") message open close error)
-    (if (not onmsg)
+    (if (not message)
         (error "Trivial-ws: onmessage handler must be"))
     (let* ((ws (#j:opNew #j:window "WebSocket" url)))
         (when ws
