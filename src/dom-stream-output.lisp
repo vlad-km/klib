@@ -18,7 +18,7 @@ HOW USE
 (setf *out (make-dom-output-stream :exists (viewport-div *vp)))
 
 (dotimes (i 20)
-    (format *out "Hello! <br> <font color='orange'>How are you?</font><p>~d</p><br>" i))
+    (format *out "~a:Hello! <br> <font color='orange'>How are you?</font><p>~d</p><br>" i))
 
 (dotimes (i 40)
     (write-char "s" *out))
