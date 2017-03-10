@@ -35,6 +35,7 @@
 ;;; => {name: "val", next: {name2: "val2"}}
 ;;;
 
+#|
 (defun make-js-object (&rest kv)
     (let* ((obj (new))
            (idx 0)
@@ -47,6 +48,56 @@
                           (t (setf key-val el) ))
                     (incf idx)) kv)
         obj))
+|#
+
+(defun make-js-object (&rest kv)
+    (let* ((obj (new))
+           (idx 0)
+           (key-val))
+        (if (oddp (length kv))
+            (error "make-js-object: length of the arguments list not even - ~a" (length kv) ))
+        (map nil (lambda (el)
+                     (cond ((oddp idx)
+                            (setf (oget obj key-val) el))
+                           (t (setf key-val el) ))
+                     (incf idx)) kv)
+        obj))
+
+
+;;; set-object-values
+;;;
+;;; (setf obj (set-object-values (new)
+;;;               (cons "value" 1) (cons "func" (lambda (x) (1+ val)))))
+;;;  => {value: 1, func:(function)}
+;;;
+;;; Problem: need js object ["string"] or {urls:["string"]}
+;;;          with jscl:
+;;;                     (defparameter arr (make-array 1 :initial-element nil))
+;;;                     (setf (aref arr 0) "string")
+;;;                     => #("string")
+;;;                     but on js its look as: Array[Array[6]]. "string" as [s,t,r,i,n,g]
+;;;
+;;; Workaround
+;;;
+;;;     (setf arr (#j:makeArray))
+;;;     (set-object-values arr (cons 0 (#j:returnString "string")))
+;;;
+;;;     on js side:  ["string"]
+;;;
+;;;
+;;; other hand
+;;;
+;;;    (setf obj (set-object-values (new) (cons "fn" "name") (cons "arg" "111") (cons "val" 112)))
+;;;    on js: {fn: "name",arg:"111",val:112}
+;;;
+;;; Ok
+;;;
+;;; Detail see on klib/lib/rtjscl.js
+;;;
+(export '(set-object-values))
+(defun set-object-values (obj &rest conses)
+    (map nil (lambda (el) (#j:seteObjectValue obj (car el) (cdr el))) conses)
+    obj)
 
 
 
@@ -57,7 +108,7 @@
 ;;; (setf obj (make-js-object "aaa" 111 "bbb" 222))
 ;;; (oget obj "aaa") => 111
 ;;;
-;;; (setf ((place '())))
+;;; (setf place '())
 ;;;
 ;;; (with-js-object ((key val) obj)
 ;;;      (push (cons key val) place))
@@ -65,6 +116,8 @@
 ;;;
 ;;; (setf temp (aref key-form 0)
 ;;;       key-val (funcall ((oget temp "toString" "bind") temp)))
+;;;
+;;; LOCAL MACRO DEFINITION
 ;;;
 (defmacro with-js-object ((binding-form js-object &optional result-form) &body body)
     (destructuring-bind (key-var &optional value-var)

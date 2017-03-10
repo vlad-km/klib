@@ -17,17 +17,18 @@
 ;;;
 ;;; open socket
 ;;;      url - "ws://127.0.0.1:port-number" (string)
-;;;      onmsg  - websocket onmessage function
-;;;      error - oneror
-;;;      open  - opem
-;;;      close - close
+;;;      message  - websocket onmessage function
+;;;      error    - oneror
+;;;      open     - open
+;;;      close    - close
 ;;; return websocket instance
 ;;;
-;;; (setf ws (tws-open :onmsg (lambda (data)
-;;;                            (let* ((msg (#j:window:JSON:parse (oget data "data"))))
+;;; (setf ws (tws-open :message (lambda (data)
+;;;                               (let* ((msg (#j:window:JSON:parse (oget data "data"))))
 ;;;                               ...))
-;;;                    :open #'open-ffn
-;;;                    :error #'error-fn ))
+;;;                    :open #'open-fn
+;;;                    :error #'error-fn
+;;;                    :close #'closed-fn ))
 ;;;
 ;;; message => (lambda (MessageEvent) ...)
 ;;;             MessageEvent.data  - msg receved
