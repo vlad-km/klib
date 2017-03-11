@@ -9,12 +9,11 @@
 ;;; Inspired by Helmut Kian commit on 13 Jun 2015
 ;;;             https://github.com/helmutkian/jscl/commit/409add7cbb83a095f15036c4c4879e9c14c768e5
 ;;;
-;;; Copyleft, 2016 mvk
+;;; Copyleft, 2016-2017 mvk
 ;;;
 ;;; Tested: Chrome
 ;;;         Win 7/ ccl v1.11-64
 ;;;         JSCl master branch
-;;;             https://github.com/davazp/jscl/commit/ac132c0e128debe265f9a3fe74e1a96f78fea8cb
 ;;;
 ;;; It requires additional testing
 ;;;
