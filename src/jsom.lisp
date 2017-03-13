@@ -9,11 +9,8 @@
 ;;; Inspired by Helmut Kian commit on 13 Jun 2015
 ;;;             https://github.com/helmutkian/jscl/commit/409add7cbb83a095f15036c4c4879e9c14c768e5
 ;;;
-;;; Copyleft, 2016-2017 mvk
+;;; Copyleft, 2016-2017, mvk
 ;;;
-;;; Tested: Chrome
-;;;         Win 7/ ccl v1.11-64
-;;;         JSCl master branch
 ;;;
 ;;; It requires additional testing
 ;;;
@@ -54,7 +51,7 @@
            (idx 0)
            (key-val))
         (if (oddp (length kv))
-            (error "make-js-object: length of the arguments list not even - ~a" (length kv) ))
+            (error "make-js-object: length of args not even - ~a" (length kv) ))
         (map nil (lambda (el)
                      (cond ((oddp idx)
                             (setf (oget obj key-val) el))
@@ -76,15 +73,22 @@
 ;;;                     => #("string")
 ;;;                     but on js its look as: Array[Array[6]]. "string" as [s,t,r,i,n,g]
 ;;;
-;;; Workaround
+;;; Solve:             use lisp-to-js
+;;;                    (setf (aref arr 0) (lisp-to-js "string"))
+;;;                    Ok
+;;; Other hands
 ;;;
-;;;     (setf arr (#j:makeArray))
-;;;     (set-object-values arr (cons 0 (#j:returnString "string")))
-;;;
-;;;     on js side:  ["string"]
+;;;     (funcall ((oget arr "push" "bind") arr "other string"))
+;;;     =>  ["string","other string"]
 ;;;
 ;;;
-;;; other hand
+;;;
+;;;     (setf arr (make-new #j:Array))
+;;;     (set-object-values arr (cons 0 (lisp-to-js "string")))
+;;;
+;;;     => on js side:  ["string"]
+;;;
+;;;
 ;;;
 ;;;    (setf obj (set-object-values (new) (cons "fn" "name") (cons "arg" "111") (cons "val" 112)))
 ;;;    on js: {fn: "name",arg:"111",val:112}
@@ -95,7 +99,7 @@
 ;;;
 (export '(set-object-values))
 (defun set-object-values (obj &rest conses)
-    (map nil (lambda (el) (#j:seteObjectValue obj (car el) (cdr el))) conses)
+    (map nil (lambda (el) (#j:setObjectValue obj (car el) (cdr el))) conses)
     obj)
 
 
