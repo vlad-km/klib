@@ -106,4 +106,14 @@
           (t nil))
     (values-list nil))
 
+
+
+;;;
+;;; install :trivial-ws-feature *features*
+;;;
+;;; Another addon should check *features* and make a decision about the continuation
+;;; with the issuance of diagnostics
+;;;
+(addon-provide :trivial-ws-feature :release (list 'Pre-0.1 'pre-0.1))
+
 ;;; EOF
