@@ -81,16 +81,31 @@
 
 
 
+
+
 ;;; window.document.body
 ;;;
+
+;;;
+;;; A bad idea is to yank the house every time - (dom-get-body)
+;;; its constant
+;;;
+(export '(*dom-body*))
+(defparameter *dom-body* (#j:window:document:body))
+
 (defun dom-get-body ()
     #j:window:document:body)
 
-
-;;; window.document.head
 ;;;
+;;; window.document.head
+;;; see above
+;;;
+(export '(*dom-head*))
+(defparameter *dom-head* (#j:window:document:body))
+
 (defun dom-get-head ()
     #j:window:document:head)
+
 
 ;;; window.document.title
 ;;;
@@ -588,6 +603,16 @@
     (funcall ((oget element "appendChild" "bind")
               element
               new-element)))
+
+
+;;;
+;;; install :dom *features*
+;;;
+;;; Another addon should check *features* and make a decision about the continuation
+;;; with the issuance of diagnostics
+;;;
+
+(addon-provide :dom-feature)
 
 
 ;;; EOF
