@@ -28,6 +28,43 @@
     (declare (ignore any)))
 
 
+;;;
+;;; addon *features* support
+;;;
+;;; Another addon should check *features* and make a decision about the continuation
+;;; with the issuance of diagnostics
+;;;
+;;; :release may be list => '(pre-01 pre-02 pre-0.1)
+;;;
+(export '(addon-provide))
+(defun addon-provide (feature &key release)
+    (unless (member feature *features*)
+        (push feature *features*))
+    (if release
+        (setf (symbol-plist feature) (list 'release release)))
+    (values-list nil) )
+
+
+;;;
+;;; (addon-requiere :trivial-ws :release 'pre-02)
+;;; if existing  ws addon has release pre-01, will be raise error
+;;;
+(export '(addon-require))
+(defun addon-require (feature &key release)
+    (unless (member feature *features*)
+        (error (concat "Add " feature )))
+    (when release
+        (let* ((fea (get feature 'release))
+               (msg (format nil "Need ~a ~a. Present ~a~%" feature release fea ) ))
+            (typecase fea
+              (cons
+               (if (not (member release fea))
+                   (error msg)))
+              (symbol (if (not (equal fea release))
+                          (error msg))))))
+    (values-list nil))
+
+
 
 ;;;
 ;;; gen-uid
