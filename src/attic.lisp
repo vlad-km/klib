@@ -41,7 +41,7 @@
     (unless (member feature *features*)
         (push feature *features*))
     (if release
-        (setf (symbol-plist feature) (list 'release release)))
+        (setq (symbol-plist feature) (list 'release release)))
     (values-list nil) )
 
 
@@ -78,7 +78,7 @@
 ;;;
 (export '(gen-uid))
 (defun gen-uid (prefix name &optional (postfix "-id"))
-    (format nil "~a-~a~a" prefix (string (gensym name)) postfix))
+    (concat prefix "-" (string (gensym name)) postfix))
 
 
 
@@ -87,6 +87,9 @@
 ;;;
 ;;; (split-str (list #\space #\. ) "aaaa bb.bbbb cccc")
 ;;; => ("aaaa" "bb" "bbbb" "cccc")
+;;;
+;;; Use carefully. Slow function
+;;;
 (export '(split-str))
 (defun split-str (chars str &optional (lst nil) (accm ""))
     (cond
@@ -123,8 +126,8 @@
 ;;;      => ("aaa" "bbb" "ccc")
 ;;;
 (export '(split))
-(defun split (src-str &key not-empty  max (delim '(#\Space #\Tab)))
-    (flet ((delim-p (char) (find char delim)))
+(defun split (src-str &key not-empty  max (delim #\Space))
+    (flet ((delim-p (char) (char= char delim)))
         (reverse
          (let ((result nil)
                (start 0)
@@ -134,8 +137,8 @@
              (loop
                (when (and max (>= words (1- max)))
                    (return (cons (subseq src-str start) result)))
-               (setf end (position-if #'delim-p src-str :start start))
-               (setf item (subseq src-str start end))
+               (setq end (position-if #'delim-p src-str :start start))
+               (setq item (subseq src-str start end))
                (cond ((and not-empty (> (length item) 0))
                       (push item result)
                       (incf words))
@@ -143,7 +146,7 @@
                       (push item result)
                       (incf words)))
                (unless end (return result))
-               (setf start (1+ end)))))))
+               (setq start (1+ end)))))))
 
 
 ;;;
