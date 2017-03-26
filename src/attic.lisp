@@ -25,7 +25,8 @@
     fail)
 
 (defun nop (&rest any)
-    (declare (ignore any)))
+    (declare (ignore any))
+    (values-list nil))
 
 
 ;;;
@@ -36,12 +37,14 @@
 ;;;
 ;;; :release may be list => '(pre-01 pre-02 pre-0.1)
 ;;;
+;;; note: -ccl dont compile on ccl
 (export '(addon-provide))
 (defun addon-provide (feature &key release)
-    (unless (member feature *features*)
+    (declare (ignore release))
+    (unless (find feature *features*)
         (push feature *features*))
-    (if release
-        (setq (symbol-plist feature) (list 'release release)))
+    ;;#-ccl(if release
+    ;;         (setq (symbol-plist feature) (list 'release release)))
     (values-list nil) )
 
 
@@ -49,19 +52,24 @@
 ;;; (addon-requiere :trivial-ws :release 'pre-02)
 ;;; if existing  ws addon has release pre-01, will be raise error
 ;;;
+;;; todo: otherwise
+;;;
+;;;;note: -ccl dont compile on ccl
+;;;
 (export '(addon-require))
 (defun addon-require (feature &key release)
-    (unless (member feature *features*)
-        (error (concat "Add " feature )))
-    (when release
-        (let* ((fea (get feature 'release))
-               (msg (format nil "Need ~a ~a. Present ~a~%" feature release fea ) ))
-            (typecase fea
-              (cons
-               (if (not (member release fea))
-                   (error msg)))
-              (symbol (if (not (equal fea release))
-                          (error msg))))))
+    (declare (ignore release))
+    (unless (find feature *features*)
+        (error (concat  feature " not present")))
+    ;;#-ccl(when release
+    ;;         (let* ((fea (get feature 'release))
+    ;;                (msg (format nil "Need ~a ~a. Present ~a~%" feature release fea ) ))
+    ;;             (typecase fea
+    ;;               (cons
+    ;;                (if (not (member release fea))
+    ;;                    (error msg)))
+    ;;               (symbol (if (not (equal fea release))
+    ;;                           (error msg))))))
     (values-list nil))
 
 
@@ -71,7 +79,7 @@
 ;;;
 ;;; Generate uniq id (mostly for dom elements id)
 ;;;
-;;;  prefix-(uniq-name from gensym)-postfix
+;;;        prefix-(uniq-name from gensym)-postfix
 ;;;
 ;;; (gen-uid "image" "stuff" )
 ;;;   => "image-stuff35736-id"
@@ -81,6 +89,7 @@
     (concat prefix "-" (string (gensym name)) postfix))
 
 
+#|
 
 ;;;
 ;;; Split string
@@ -108,6 +117,7 @@
                           lst
                           (concat accm (string c)))) ))))
 
+|#
 
 ;;;
 ;;; Split string
@@ -149,6 +159,7 @@
                (setq start (1+ end)))))))
 
 
+#|
 ;;;
 ;;; (pair '("a" "b" 'c") '(1 2 3))
 ;;;       => (("a" . 1) ("b" . 2) ("c" . 3))
@@ -174,11 +185,13 @@
     "Make a symbol out of the printed representations of the arguments." ; LMH
     (values (intern (apply #'mkstr args rest2))))
 
+|#
 
 
 ;;;; Other utils from auxfns paip
 
 
+#|
 (export '(starts-with punctuation-p print-with-spaces mappend not-null
           first-or-nil first-or-self))
 
@@ -212,6 +225,8 @@
     "The first element of x, if it is a list; else x itself."
     (if (consp x) (first x) x))
 
+|#
+
 
 ;;; rest from rest (i.e. without the first two)
 ;;; (rest2 '(1 2 3 4 5))
@@ -226,17 +241,19 @@
 ;;;; from PATTERN MATCHING FACILITY
 
 
-(export '(flatten mklist mappend2 random-elt sum))
+(export '(flatten  mappend2 random-elt sum))
 
 (defun flatten (the-list)
     "Append together elements (or lists) in the list."
     (mappend2 #'mklist the-list))
 
+#|
 (defun mklist (x)
     "Return x if it is a list, otherwise (x)."
     (if (listp x)
         x
         (list x)))
+|#
 
 (defun mappend2 (fn the-list)
     "Apply fn to each element of list and append the results."

@@ -1,45 +1,51 @@
 ;;; -*- mode:lisp;  coding:utf-8 -*-
+;;;
+;;; Klib
+;;; function 'load'
+;;;
+;;; Copyright (C) 2017 mvk (github.com/vlad-km)
+;;;
+;;;
+;;;
+;;;
+;;; Release: Pre-0.2
+;;;
+;;; Tested: Chrome/56.0 (extension)
+;;;         Electron
+;;;
+;;;
+
 
 ;;;
-;;; Common Lisp function 'load'
-;;;
-;;; Release for jscl
-;;;
-;;; Copyleft, 2016, mvk
-;;; As is, with no guarantees
-;;;
 ;;; (load fname)
-;;; 
-;;; 1. file with name 'midagi.lisp' contain lisp definition as usual
+;;;
+;;; 1. file with name 'midagi.lisp' contain
 ;;;
 ;;;     (defparameter *ara (make-array 5 :initial-element 0)
 ;;;     (defun fun1 () (print 'Im-fun1))
 ;;;     (defun fun2 (x) (identity x))
-;;;  
+;;;
 ;;; CL-USER>(load "j/midagi.lisp")
-;;; =>
-;;; *ARA
-;;; FUN1
-;;; FUN2
-;;; Finalyze
 ;;;
 ;;; Note:
 ;;;
 ;;;    1. At this place, "j/" - directory inside root chrome extension directory, or route for
 ;;;       you webserver.
-;;;    2. In extension mode, not need use webserver for accessed to local resources. 
-;;;       All resources should placed inside directory where from the extension installed   
+;;;    2. In extension mode, not need use webserver for accessed to local resources.
+;;;       All resources should placed inside directory where from the extension installed
 ;;;
 ;;; Important:
 ;;;
-;;;    Behavior of a function compiled via compile-application (from bootstrap) and compiled when 
-;;;    downloading the source code in the browser may vary considerably. 
+;;;    Behavior of a function compiled via compile-application (from jscl:bootstrap) and compiled when
+;;;    downloading the source code in the browser may vary considerably.
 ;;;    You are warned.
 ;;;
 
 (export '(xhr-receive))
 (defun xhr-receive (uri fn-ok &optional fn-err)
-    (let* ((req (#j:opNew #j:window "XMLHttpRequest")))
+    ;; make-new call
+    ;;(let* ((req (#j:opNew #j:window "XMLHttpRequest")))
+    (let* ((req (make-new #j:XMLHttpRequest)))
         (funcall ((oget req "open" "bind") req "GET" uri t))
         (funcall ((oget req "setRequestHeader" "bind") req "Cache-Control" "no-cache"))
         (funcall ((oget req "setRequestHeader" "bind") req "Cache-Control" "no-store"))
@@ -47,37 +53,50 @@
               (lambda (evt)
                   (if (= (oget req "readyState") 4)
                       (if (= (oget req "status") 200)
-                          (progn
-                              (funcall fn-ok (oget req "responseText")))
-                          (if (not (null fn-err))
+                          (funcall fn-ok (oget req "responseText"))
+                          (if fn-err
                               (funcall fn-err uri (oget req "status") )
-                              (#j:console:log (concat "\n" (oget req "status") ": Error load " name " - " (oget req "statusText"))))))))
+                              (format t "xhr-receive: load error ~a ~a~%" uri (oget req "statusText")))))))
         (#j:reqXHRsendNull req) ))
 
-(defun eval-form (input)
-    (%js-try
-     (handler-case
-         (progn
-             (let* ((forms (read-from-string (concat "(" input ")")))
-                    (result nil))
-                 (dolist (x forms)
-                     (setf result (multiple-value-list (eval-interactive x)))
-                     (dolist (y result)
-                         (format t "~a ~%" y)))))
-       (warning (msg)
-           (format t "Warning: ~s~%" (!condition-args msg)))
-       (error (msg)
-           (format t "Error: ~s~%" (!condition-args msg))))
-     (catch (err)
-         (format t "Catch js error: ~s~%" (or (oget err "message") err)))
-     (finally
-      (format t "Finalyze~%")) ))
+(defun %%load-form-eval (input &key verbose ready)
+    (let* ((w-err t)
+           (form-num 0)
+           (forms (read-from-string (concat "(" input ")"))))
+        (when verbose
+            (format t "Loaded ~d sexpr~%" (length forms))
+            (format t "Compilation~%Wait...~%"))
+        (%js-try
+         (handler-case
+             (progn
+                 (let* ((form-result nil))
+                     (dolist (eform forms)
+                         (setq form-result (multiple-value-list (eval eform)))
+                         (incf form-num)
+                         (when verbose
+                             (dolist (x form-result)
+                                 (format t "~a ~%" x)  )) )))
+           (error (msg)
+               (setq w-err nil)
+               (format t "Error [~a] : ~s~%" form-num (!condition-args msg))))
+         (catch (err)
+             (setq w-err nil)
+             (format t "<font color='red'>Error [~a]: ~s</font>~%"
+                     form-num  (or (oget err "message") err)))
+         (finally
+          (if verbose (format t "Finallyse~%"))
+          (if (and w-err ready) (funcall ready))  ) )) )
+
+
 
 (export '(load))
-(defun load (host-file-name)
-    (xhr-receive  host-file-name
+(defun load (name &key (verbose nil) (ready nil) )
+    (xhr-receive  name
                   (lambda (input)
-                      (eval-form (substitute #\Space (code-char 13) input) ))
+                      (%%load-form-eval
+                       (substitute #\Space (code-char 13) input)
+                       :verbose verbose
+                       :ready ready  ))
                   (lambda (uri status)
                       (format t "~%Load: Can't load ~s. Status: ~a~%" uri status)) )
     (values))
