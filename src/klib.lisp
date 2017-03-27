@@ -1,12 +1,12 @@
 (/debug "Klib...")
 
-(unless #j:opNew
-    (#j:console:log "klib runtime not present")
-    (error "klib runtime not present") )
+;;;(unless #j:opNew
+;;;    (#j:console:log "klib runtime not present")
+;;;    (error "klib runtime not present") )
 
 (addon-provide :klib)
 
-(/debug "provide")
+;;;(/debug "provide")
 
 ;;;
 ;;; Export jscl symbols

@@ -159,3 +159,8 @@
                   (lambda (uri status)
                       (format t "~%Load: Can't load ~s. Status: ~a~%" uri status)) )
     (values))
+
+
+;;;
+;;;
+(addon-provide :tenv)

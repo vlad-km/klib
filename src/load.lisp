@@ -59,7 +59,7 @@
                               (format t "xhr-receive: load error ~a ~a~%" uri (oget req "statusText")))))))
         (#j:reqXHRsendNull req) ))
 
-(defun %%load-form-eval (input &key verbose ready)
+(defun %%load-form-eval (input &key verbose ready error)
     (let* ((w-err t)
            (form-num 0)
            (forms (read-from-string (concat "(" input ")"))))
@@ -84,19 +84,25 @@
              (format t "<font color='red'>Error [~a]: ~s</font>~%"
                      form-num  (or (oget err "message") err)))
          (finally
-          (if verbose (format t "Finallyse~%"))
-          (if (and w-err ready) (funcall ready))  ) )) )
+          ;;(if verbose (format t "Finallyse~%"))
+          ;;(if (and w-err ready) (funcall ready))
+          (cond (w-err
+                 (if ready (funcall ready) (print 'Done)))
+                (t
+                 (if error (funcall error) (print (concat "Error at " form-num)))))  ))
+        (values-list nil)))
 
 
 
 (export '(load))
-(defun load (name &key (verbose nil) (ready nil) )
+(defun load (name &key (verbose nil) (ready nil) (so-so nil) )
     (xhr-receive  name
                   (lambda (input)
                       (%%load-form-eval
                        (substitute #\Space (code-char 13) input)
                        :verbose verbose
-                       :ready ready  ))
+                       :ready ready
+                       :error so-so ))
                   (lambda (uri status)
                       (format t "~%Load: Can't load ~s. Status: ~a~%" uri status)) )
-    (values))
+    (values-list nil))
