@@ -84,7 +84,7 @@
              (format t "<font color='red'>Error [~a]: ~s</font>~%"
                      form-num  (or (oget err "message") err)))
          (finally
-          ;;(if verbose (format t "Finallyse~%"))
+          (if verbose (format t "Finallyse~%"))
           ;;(if (and w-err ready) (funcall ready))
           (cond (w-err
                  (if ready (funcall ready) (print 'Done)))
@@ -95,11 +95,14 @@
 
 
 (export '(load))
+(defparameter *ldr-rpl-patt* (Reg-exp (code-char 13) "g"))
+
 (defun load (name &key (verbose nil) (ready nil) (so-so nil) )
     (xhr-receive  name
                   (lambda (input)
                       (%%load-form-eval
-                       (substitute #\Space (code-char 13) input)
+                       ;;(substitute #\Space (code-char 13) input)
+                       (string-replace input *ldr-rpl-patt* " ")
                        :verbose verbose
                        :ready ready
                        :error so-so ))
