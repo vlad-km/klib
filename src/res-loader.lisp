@@ -41,6 +41,6 @@
             (dom-set-event link "onload"
                            (lambda (evt)
                                (if (equal what :script) (dom-remove link))
-                               (when onload (funcall onload)))))
+                               (funcall onload from))))
         (dom-append *dom-body* link)
         (unless onload (if (equal what :script) (dom-remove link)))))
