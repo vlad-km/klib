@@ -1,13 +1,10 @@
 ;;; -*- mode:lisp; coding:utf-8 -*-
-
-
-;;; Trivail Websocket API for JSCL
+;;;
+;;; Klib
+;;; Wrapper for JS Websocket API
 ;;;
 ;;; Release: Pre-0.1
 ;;;
-;;;
-;;;
-;;; Copyleft 2016-2017, MVK
 ;;;
 ;;;
 ;;;
@@ -64,8 +61,8 @@
         (error "Trivial-ws: onmessage handler must be"))
     (let* ((ws))
         (if protocol
-            (setf ws (jscl::make-new #j:WebSocket (jscl::lisp-to-js url) (jscl::lisp-to-js protocol)))
-            (setf ws (jscl::make-new #j:WebSocket (jscl::lisp-to-js url) )))
+            (setf ws (make-new #j:WebSocket (lisp-to-js url) (lisp-to-js protocol)))
+            (setf ws (make-new #j:WebSocket (lisp-to-js url) )))
 
         (when ws
             (setf (oget ws "onmessage") message)
@@ -114,6 +111,6 @@
 ;;; Another addon should check *features* and make a decision about the continuation
 ;;; with the issuance of diagnostics
 ;;;
-(addon-provide :trivial-ws-feature :release (list 'Pre-0.1 'pre-0.1))
+(addon-provide :tws)
 
 ;;; EOF

@@ -7,68 +7,6 @@
 Need for correct **XMLHttpRequest**. As an example: xhr.send(null).
 Another case, when out `JS` get an object containing` null`. In this case, an interrupt occurs:
 `>> ERROR: Cannot use 'in' operator to search for 'length' in null`
-                   
-
-`opNew`: 
->js `new` wrapper. Unfortunately `make-new` not correctly create objects. 
-As an example:
-
-```lisp
-(jscl::make-new #j:WebSocket (#j:String "ws://127.0.0.1:40000")) 
-=> ERROR: Failed to construct 'WebSocket': The URL 'w,s,:,/,/,1,2,7,.,0,.,0,.,1,:,4,0,0,0,0' is invalid
-```
-
-`opEval`: 
->for correct ops with window.eval in a case where `undefined` returns. 
-As an example:
-
-```js                 
-(setf *dd (#j:window:eval "var *dd"))
-(if *dd ..)
-=> ERROR: Variable *DD is unbound 
-``` 
-
-Possible around:
-
-```lisp
-(setf *dd (#j:window:eval "var *dd"))
-(if (not (boundp '*dd)) (setf *dd nil))
-(if *dd .... ...)
-```
-or
-```lisp
-(setf *dd (#j:opEval "var *dd"))
-(if (equal *dd "undefined") 
-     ...
-     ...)
-```
-
-## Other cases
-
-### Object.keys and jscl string
-
-```lisp
-(setf *obj1 (make-js-object "aa" 1))
-(setf *keys1 (#j:Object:keys *obj1))
-;
-(equal (aref *key1s 0) "aa")
-=> nil
-(string (aref *keys1 0))
-;=> "aa"
-;
-(equal (string (aref *keys1 0)) "aa"))
-;=> nil
-(equal (funcall ((jscl::oget (aref *keys1 0) "toString" "bind") (aref *keys1 0))) "aa")
-;=> t
-;
-(setf *s1 (aref k1 0))
-(equal *s1 "aa")
-;=> t
-(equal (string *s1) "aa")
-;=> t
-
-``` 
-
 
 ### Communication JSCL with browser API's
 
@@ -112,12 +50,6 @@ after completion `let` in which the variable 'hi' was defined
 
 - block `let` will be completed at the time "Time3: 0.001 ms"
 
-
-
-** Possible conclusion **
-> Due to asynchronous Javascript and using familiar to lisp
-programming style, we will not achieve our goal. Go to the asynchronous style.
-
 One way of might be:
 
 ```lisp
@@ -150,7 +82,7 @@ Or, use, `Promise`. We define two functions `get-hist-promise` and` then` such t
       (funcall ((oget prom "then" "bind") prom handler)))
 ```
 
-Then the our decision will look like this:
+Then the our way will look like this:
 
 ```lisp
 (then (get-hist-promise)

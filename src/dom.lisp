@@ -1,37 +1,16 @@
+;;; Klib
 ;;; DOM manipulation functions
 ;;;
 ;;;
-;;; Yes, this is not the jquery-way
-;;; I know about it
-;;;
-;;; Copyleft, 2016 mvk
-;;;
-;;; Release: Pre-0.1
-;;; Version: Alpha-1.0
+;;; Copyright (C) 2017 mvk (github.com/vlad-km)
 ;;;
 ;;;
-;;; Depends on:
+
+
 ;;;
+;;; Depends on: string.lisp
+;;;             attic.lisp
 ;;;
-;;; Tested: Chrome
-;;;         Win 7/ ccl v1.11-64
-;;;         JSCl master branch
-;;;             https://github.com/davazp/jscl/commit/ac132c0e128debe265f9a3fe74e1a96f78fea8cb
-;;;
-;;; Note:
-;;;     1) Some functions raise error condition because current JSCL
-;;;        was not correct processing null from JS
-;;;     2) Some functions may raised error condition by cause
-;;;        returned dynamical array data type from JS.
-;;;               note:  07.03.2017 - its wrong.
-;;;                      See dom-childs-collection comments
-;;;;    3) The above two points are valid for (Nodes:
-;;;        childs,parent,sibling node and nodes collections).
-;;;        It requires additional testing
-;;;     4) Host (win7/ccl-1.11) compiled to dom.js
-;;;        for run-time compiled on browser, before, need export
-;;;        oset, oget, concat, join from jscl package, as
-;;;        external functiions (i.e. jscl::oget etc., etc.)
 ;;;
 
 
@@ -79,19 +58,12 @@
           dom-insert ))
 
 
-
-
-
-
 ;;; window.document.body
 ;;;
 
 ;;;
-;;; A bad idea is to yank the house every time - (dom-get-body)
-;;; its constant
-;;;
 (export '(*dom-body*))
-(defparameter *dom-body* (#j:window:document:body))
+(defparameter *dom-body* #j:window:document:body)
 
 (defun dom-get-body ()
     #j:window:document:body)
@@ -101,7 +73,7 @@
 ;;; see above
 ;;;
 (export '(*dom-head*))
-(defparameter *dom-head* (#j:window:document:body))
+(defparameter *dom-head* #j:window:document:head)
 
 (defun dom-get-head ()
     #j:window:document:head)
@@ -115,7 +87,10 @@
 (defun dom-set-title (text)
     (setf (oget #j:window:document "title") text))
 
+
 ;;; element.value
+;;;
+;;; todo: test
 ;;;
 (defun dom-get-element-value (element)
     (oget element "value"))
@@ -132,29 +107,52 @@
 ;;;
 ;;;    (handler-case (dom-get-element-by-id id) (error (err) nil))
 ;;;
-
+;;; 100 id's => 0.004 sec
+;;;
 (defun dom-get-element-by-id (id)
     (#j:window:document:getElementById id))
 
 
 ;;; window.document.getElementsByClassName
 ;;;
+;;; todo: Need test
+;;;
 (defun dom-get-elements-by-class (id)
     (#j:window:document:getElementsByClassName id))
 
 
 
+;;; elem.hasAttribute(name)
+;;;
+;;; (dom-has-attribute *div "Order")
+;;; => t, nil
+;;;
+(export '(dom-has-attribute))
+(defun dom-has-attribute (elem name)
+    (funcall ((oget elem "hasAttribute" "bind") elem name)))
+
+
 ;;; elm.setAttribute(val)
+;;;
+;;; todo: Need test
 ;;;
 (defun dom-set-attribute (elm attr val)
     (funcall ((oget elm "setAttribute" "bind")  elm attr val)))
 
 ;;; elm.getAttribute()
 ;;;
+;;; todo: Need test
+;;;
 (defun dom-get-attribute (elm attr)
-    (funcall ((oget elm "getAttribute" "bind") elm attr)))
+    (let ((rc (funcall ((oget elm "getAttribute" "bind") elm attr))))
+        (if (js-null-p rc)
+            nil
+            rc)))
+
 
 ;;; elm.removeAttribute(attr)
+;;;
+;;; todo: Need test
 ;;;
 (defun dom-remove-attribute (elm attr)
     (funcall ((oget elm "removeAttribute" "bind") elm attr)))
@@ -171,6 +169,9 @@
 ;;;
 ;;; (dom-element-p "sss") => nil
 ;;; (dom-element-p (dom-create "div")) => t
+;;;
+;;; todo: Need test
+;;; null or js-null
 ;;;
 (defun dom-element-p (u)
     (when (objectp u)
@@ -192,6 +193,7 @@
 ;;;
 ;;; (dom-get-inner-html (dom-escape-html "<p>text</p>"))
 ;;; => "&lt;p&gt;test&lt;/p&gt;"
+;;;
 ;;;
 (defun dom-get-inner-html (div)
     (oget div "innerHTML"))
@@ -225,12 +227,15 @@
 ;;;          07.03.2016
 ;;;
 
-;;; DO NOT USE
+;;; DO NOT USE ????
+;;; todo: test and workaround
 (defun dom-create-text-node (str)
     (#j:window:document:createTextNode str))
 
 
 ;;; dom-replace-text-node
+;;;
+;;; Note: Its Kludge for TextNode
 ;;;
 (defun dom-replace-text-node (div str)
     (setf (oget div "innerHTML") str))
@@ -242,44 +247,119 @@
 ;;;
 ;;; Time 0.02 ms
 ;;; todo: performance
+;;;        done: 0.002s on 100 div's
+;;;
 (defun dom-remove (elem)
     (if (not (js-null-p (oget elem "parentNode")))
         (let* ((var (oget elem "parentNode")))
             (funcall ((oget var "removeChild" "bind") var elem )))))
 
+
+;;; dom-class-name
+;;;
+;;; (dom-class-name div)
+;;; => string "class1 class2 ...classn"
+;;;    i.e. el.className
+;;;
+
+(export '(dom-class-name))
+(defun dom-class-name (elem)
+    (oget elem "className"))
+
+
+;;; dom-get-class-names
+;;;
+;;; (dom-get-class-names elem)
+;;; =>
+;;;   (list "name1" "name2") or nil
+;;;
+;;; (dom-get-class-names elem :to 'vector)
+;;; =>
+;;;   #("name1" "name2")
+;;;
+;;; => nil
+;;;    if elem hasnt any class
+;;;
+
+(export '(dom-get-class-name))
+(defun dom-get-class-name (elem &key (to 'list))
+    (let ((cls (lisp-to-js (oget elem "className")))
+          (cn nil))
+        (if (> (oget cls "length") 0)
+            (map to (lambda (x) (js-to-lisp x))
+                 (funcall ((oget cls "split" "bind") cls " "))))))
+
+
+
+;;; dom-contains-class
+;;;
+;;; (dom-contains-class class-name)
+;;; => logical  i.e. exists/none
+;;;
+
+(export '(dom-contains-class))
+
+(defun dom-contains-class (elem class-name)
+    (let* ((collection (oget elem "classList")))
+        (funcall ((oget collection "contains" "bind") collection class-name))))
+
 ;;; dom-add-class
 ;;;
 ;;; (dom-add-class div "invisible")
-;;; if css definition ".invisible" exist
 ;;;
-(defun dom-add-class (elem cls)
-    (symbol-macrolet ((class-name (oget elem "className")))
-        (let ((old-cls (or class-name "")))
-            (setf class-name
-                  (if old-cls
-                      (concat old-cls " " cls)
-                      cls)))))
+
+;;;
+;;; collection method Add return "undefined"!!
+;;;
+(export '(dom-add-class))
+
+(defun dom-add-class (elem class)
+    (let* ((collection (oget elem "classList")))
+        (funcall ((oget collection "add" "bind") collection class))
+        (values-list nil)))
+
 
 ;;; dom-remove-class
 ;;;
 ;;; (dom-remove-class div "visible")
-;;; if css definition ".invisible" exist
 ;;;
-(defun dom-remove-class (elem cls)
-    (symbol-macrolet ((class-name (oget elem "className")))
-        (let ((old-classes (split-str '(#\space) class-name)))
-            (setf class-name (join (remove cls old-classes :test #'equal) " ")))))
+(export '(dom-remove-class))
+(defun dom-remove-class (elem class)
+    (let* ((collection (oget elem "classList")))
+        (funcall ((oget collection "remove" "bind") collection class))
+        (values-list nil)))
+
+
+;;; dom-toggle-class
+;;;
+;;; (dom-toggle-class div "visible")
+;;; =>
+;;;   if class exists - remove it
+;;;   else add new class to dom element
+;;;
+(export '(dom-toggle-class))
+(defun dom-toggle-class (elem class)
+    (let* ((collection (oget elem "classList")))
+        (funcall ((oget collection "toggle" "bind") collection class))
+        (values-list nil)))
 
 
 ;;; dom-have-class-p
 ;;;
 ;;; (dom-have-class-p div "invisible") => t
 ;;;
+
+#|
 (defun dom-have-class-p (elem cls)
-    (let ((classes (split-str '(#\space) (oget elem "className"))))
-        (if (find cls classes :test #'equal)
-            t
-            nil)))
+    (if (find cls (split (oget elem "className") :not-empty t) :test #'equal)
+        t
+        nil))
+|#
+
+(fset 'dom-have-class-p #'dom-contains-class)
+
+
+
 
 ;;; dom-append
 ;;;
@@ -298,7 +378,7 @@
     parent)
 
 ;;;
-;;; Synonim for dom-append
+;;; dom-mount
 ;;;
 ;;; parent.appendChild(children)
 ;;;
@@ -315,11 +395,13 @@
     parent)
 
 
-;;; dom-clear
+;;; dom-element-clear
 ;;;
 ;;; elm.innerHTML = ""
 ;;;
-(defun dom-clear (elm)
+
+(export '(dom-element-clear))
+(defun dom-element-clear (elm)
     (setf (oget elm "innerHTML") ""))
 
 
@@ -366,6 +448,7 @@
             (mapc (lambda (x) (dom-set-event obj (car x) (cdr x))) callbacks))
         obj))
 
+;;;
 ;;; dom-create-input
 ;;;
 ;;; <input>
@@ -531,9 +614,11 @@
 ;;;
 ;;; Note: ERROR Condition if pid hasnt children
 ;;;
+;;; todo: need test
 (defun dom-element-first-child (element)
-    (oget element "firstElementChild"))
-
+    (if (js-null-p (oget element "firstElementChild"))
+        nil
+        (oget element "firstElementChild")))
 
 ;;; dom-element-last-child
 ;;;
@@ -542,16 +627,24 @@
 ;;;
 ;;; Note: ERROR Condition if pid hasnt children
 ;;;
+;;; todo: need test
 (defun dom-element-last-child (element)
-    (oget element "lastElementChild"))
+    (if (js-null-p (oget element "lastElementChild"))
+        nil
+        (oget element "lastElementChild")))
+
 
 
 
 ;;; dom-element-next-sibling
 ;;;
 ;;; NOte: ERROR condition if hasnt sibling
+;;; todo: need test
 (defun dom-element-next-sibling (element)
-    (oget element "nextSibling"))
+    (if (js-null-p (oget element "nextSibling"))
+        nil
+        (oget element "nextSibling")
+        ))
 
 
 ;;; dom-element-parent-node
@@ -573,7 +666,12 @@
 ;;;
 ;;; inserts a new element after the specified element
 ;;;
-;;; Note: ERROR condition
+;;; Note: ERROR condition hasnt right sibling
+;;;
+;;; Workaround:
+;;;     If you dont check sibling (dom-element-next-sibling) => nil or [dom element]
+;;;     its you problem, catch error (for example: (handler-case (...) (error (msg))) )
+;;;
 (defun dom-insert-after (element new-element)
     (funcall ((oget element "parentNode" "insertBefore" "bind")
               (oget element "parentNode")
@@ -586,7 +684,7 @@
 ;;; insert new element to top dom stucture
 ;;;
 ;;; Note: ERROR condition if element hasnt child
-(defun dom-insert-top (element new-elemen)
+(defun dom-insert-top (element new-element)
     (funcall ((oget element "insertBefore" "bind")
               element
               new-element
@@ -608,11 +706,8 @@
 ;;;
 ;;; install :dom *features*
 ;;;
-;;; Another addon should check *features* and make a decision about the continuation
-;;; with the issuance of diagnostics
-;;;
 
-(addon-provide :dom-feature)
+(addon-provide :dom)
 
 
 ;;; EOF

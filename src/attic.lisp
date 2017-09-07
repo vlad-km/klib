@@ -1,3 +1,4 @@
+;;;  Klib
 ;;;
 ;;;  Any useful, partially snatch from various places
 ;;;
@@ -25,44 +26,64 @@
     fail)
 
 (defun nop (&rest any)
-    (declare (ignore any)))
-
-
-;;;
-;;; addon *features* support
-;;;
-;;; Another addon should check *features* and make a decision about the continuation
-;;; with the issuance of diagnostics
-;;;
-;;; :release may be list => '(pre-01 pre-02 pre-0.1)
-;;;
-(export '(addon-provide))
-(defun addon-provide (feature &key release)
-    (unless (member feature *features*)
-        (push feature *features*))
-    (if release
-        (setf (symbol-plist feature) (list 'release release)))
-    (values-list nil) )
-
-
-;;;
-;;; (addon-requiere :trivial-ws :release 'pre-02)
-;;; if existing  ws addon has release pre-01, will be raise error
-;;;
-(export '(addon-require))
-(defun addon-require (feature &key release)
-    (unless (member feature *features*)
-        (error (concat "Add " feature )))
-    (when release
-        (let* ((fea (get feature 'release))
-               (msg (format nil "Need ~a ~a. Present ~a~%" feature release fea ) ))
-            (typecase fea
-              (cons
-               (if (not (member release fea))
-                   (error msg)))
-              (symbol (if (not (equal fea release))
-                          (error msg))))))
+    (declare (ignore any))
     (values-list nil))
+
+
+;;; pairs from 2 lists
+;;; some as zip lst1 lst2
+;;;
+(export '(pair))
+(defun pair (k v)
+    (cond ((and k v)
+           (cons (list (car k) (car v)) (pairs (cdr k) (cdr v))))
+          ((or k v)
+           (error "pairr"))
+          (t nil)))
+
+;;; cons pair primitive
+;;;     any key-val pair
+;;;     any seq as tail head
+;;;
+;;;   (mkpair :lt 11 :rt 12) => (11 . 12)
+;;;   (pair-lt *kv) => (car *kv)
+;;;   (pair-rt *kv) => (cdr *kv)
+;;;
+;;;
+
+(export '(mkpair))
+(defun mkpair (&key lt rt)
+    (cons lt rt))
+
+
+(export '(pair-lt))
+(defun pair-lt (pair)
+    (car pair))
+
+
+(export '(pair-rt))
+(defun pair-rt (pair)
+    (cdr pair))
+
+
+
+(defun set-pair-lt (pair val)
+    (rplaca pair val))
+
+(defun set-pair-rt (pair val)
+    (rlpacd pair val))
+
+(export '(set-pair-rt set-pair-lt))
+
+
+;;; (setf (pair-rt *pp) 999)
+(defsetf 'pair-rt set-pair-rt)
+
+;;; (setf (pair-lt *pp) 'qqq)
+(defsetf 'pair-lt 'set-pair-lt)
+
+
+
 
 
 
@@ -71,39 +92,249 @@
 ;;;
 ;;; Generate uniq id (mostly for dom elements id)
 ;;;
-;;;  prefix-(uniq-name from gensym)-postfix
+;;;        prefix-(uniq-name from gensym)-postfix
 ;;;
 ;;; (gen-uid "image" "stuff" )
 ;;;   => "image-stuff35736-id"
 ;;;
 (export '(gen-uid))
 (defun gen-uid (prefix name &optional (postfix "-id"))
-    (format nil "~a-~a~a" prefix (string (gensym name)) postfix))
+    (concat prefix "-" (string (gensym name)) postfix))
+
+
+;;; LISTS
+
+(export '(append1))
+(defun append1 (lst obj)
+    (append lst (list obj)))
+
+(export '(conc1))
+(defun conc1 (lst obj)
+    (nconc lst (list obj)))
+
+(export '(mklist))
+(defun mklist (obj)
+    (if (listp obj)
+        obj
+        (list obj)))
+
+(export '(single))
+(defun single (arg)
+    (and (consp arg)
+         (null (cdr (the cons arg)))))
+
+(export '(last1))
+(defun last1 (lst)
+    (car (the cons (last lst))))
+
+
+;; This is the source code for the book
+;; _Let_Over_Lambda_ by Doug Hoyte.
+;; This code is (C) 2002-2008, Doug Hoyte.
+
+(export '(mkstr))
+(defun mkstr (&rest args)
+    (with-output-to-string (s)
+      (dolist (a args) (princ a s))))
+
+;; This is the source code for the book
+;; _Let_Over_Lambda_ by Doug Hoyte.
+;; This code is (C) 2002-2008, Doug Hoyte.
+
+(export '(symb))
+(defun symb (&rest args)
+    (values (intern (apply #'mkstr args))))
+
+
+;; This is the source code for the book
+;; _Let_Over_Lambda_ by Doug Hoyte.
+;; This code is (C) 2002-2008, Doug Hoyte.
+
+;;; mvk group source n -> group n source
+;;;
+(export '(group))
+(defun group (n source)
+    (if (zerop n) (error "zero length"))
+    (labels ((rec (source acc)
+                 (let ((rest (nthcdr n source)))
+                     (if (consp rest)
+                         (rec rest (cons
+                                    (subseq source 0 n)
+                                    acc))
+                         (nreverse
+                          (cons source acc))))))
+        (if source (rec source nil) nil)))
+
+
+;; This is the source code for the book
+;; _Let_Over_Lambda_ by Doug Hoyte.
+;; This code is (C) 2002-2008, Doug Hoyte.
+
+(defun flatten (x)
+    (labels ((rec (x acc)
+                 (cond ((null x) acc)
+                       ((atom x) (cons x acc))
+                       (t (rec
+                           (car x)
+                           (rec (cdr x) acc))))))
+        (rec x nil)))
+
+
+;;;
+;;; Currying functions
+;;;
+;;; (mapcar (lambda (base) (expt base 2)) '(2 3 4 5 6))
+;;; =>
+;;;   (4 8 16 32 64)
+;;;
+;;; (mapcar (compose (curry #'* 2) (curry #'+ 1)) '(1 2 3 4))
+;;; => (4 6 8 10)
+;;;
+(export '(curry))
+(defun curry (function &rest args)
+    (lambda (&rest more-args)
+        (apply function (append args more-args))))
+
+
+(export '(rcurry))
+(defun rcurry (function &rest args)
+    (lambda (&rest more-args)
+        (apply function (append more-args args))))
 
 
 
 ;;;
-;;; Split string
+;;; foldl
 ;;;
-;;; (split-str (list #\space #\. ) "aaaa bb.bbbb cccc")
-;;; => ("aaaa" "bb" "bbbb" "cccc")
-(export '(split-str))
-(defun split-str (chars str &optional (lst nil) (accm ""))
-    (cond
-      ((= (length str) 0)
-       (reverse
-        (cond ((and (equal accm "") (null lst)) '())
-              ((equal accm "") lst)
-              (t (cons accm lst)))))
-      (t
-       (let ((c (char str 0)))
-           (if (member c chars)
-               (split-str chars (subseq str 1) (if (equal accm "")
-                                                   lst
-                                                   (cons accm lst)) "")
-               (split-str chars (subseq str 1)
-                          lst
-                          (concat accm (string c)))) ))))
+;;; (reduce (lambda (args fun) (print (list fun arg ))) '(f1 f2 f3)  :initial-value 'args)
+;;;
+;;; (foldl 'function 'args (f1 f2 f3) )
+;;; =>
+;;; (F1 ARGS)
+;;; (F2 (F1 ARGS))
+;;; (F3 (F2 (F1 ARGS)))
+;;; (F3 (F2 (F1 ARGS)))
+;;;
+;;;
+(export '(foldl))
+(defun foldl (fn init seq)
+    (reduce fn seq :initial-value init))
+
+;;;
+;;; foldr
+;;;
+;;; (reduce (lambda (fun args) (print (list fun arg ))) '(f1 f2 f3) :from-end t   :initial-value 'args)
+;;;
+;;; (foldr 'function '(f1 f2 f3) 'args)
+;;; =>
+;;; (F3 ARGS)
+;;; (F2 (F3 ARGS))
+;;; (F1 (F2 (F3 ARGS)))
+;;; (F1 (F2 (F3 ARGS)))
+;;;
+(export '(foldr))
+(defun foldr (fn seq init)
+    (reduce fn seq :from-end t :initial-value init))
+
+
+;;;
+;;; compose functions
+;;; right association
+;;;
+;;; compose g f x
+;;; (g ( f (x arg)))
+;;;
+(export '(compose))
+(defun compose (&rest functions)
+    (cond ((null functions)   'identity)
+          ((single functions) (car functions))
+          ((single (rest functions))
+           (destructuring-bind (fn1 fn2) functions
+               (lambda (&rest args)
+                   (funcall fn1 (apply fn2 args))) ))
+          (t (let ((fn1 (last1 functions))
+                   (fnseq (butlast functions)))
+                 (lambda (&rest args)
+                     (foldr 'funcall fnseq (apply fn1 args)))
+                 ))))
+
+;;;
+;;; chain f1 f2 f3
+;;; => f1(args).f2().f3()
+;;;    f3( f2 (f1 args))
+;;;
+;;; (chain (curry f1 a1) f2 (curry f3 a1 a2 a3))
+;;; funcall * args
+;;;
+(export '(chain))
+(defun chain (&rest x) (apply 'compose (reverse x)))
+
+
+
+;;;
+;;; combine two funs with binary op
+;;;
+(export '(combine))
+(defun combine (op g f)
+    (lambda (args)
+        (funcal op (funcall g args) (funcall f args))))
+
+
+
+
+;;; longer
+;;; x longer y
+;;;
+(export '(longer))
+(defun longer (x y)
+    (> (length x) (length y)))
+
+
+;;; remove duplicates
+;;; dedup
+;;;
+;;; Not present at JSCL
+(export '(rmdup))
+
+(defun rmdup (lst)
+    (cond ((eq lst nil) '())
+          ((eq (member (car lst) (cdr lst)) nil)
+           (cons (car lst) (rmdup (cdr lst))))
+          (t (rmdup (cdr lst)))))
+
+
+;;;
+;;; last n els from seq
+;;;
+(export '(lastn))
+(defun lastn (n seq)
+    (nthcdr (1+ n) seq))
+
+
+;;; take head length n
+(export '(take))
+(defun take (n seq)
+    (subseq seq 0 n))
+
+
+;;; take tail from n
+(export '(drop))
+(defun drop (n seq)
+    (if (consp seq) (nthcdr n seq)
+        (subseq seq n)))
+
+
+
+
+;;;
+;;; split seq on head tail pair
+;;;
+(export '(split-seq))
+(defun split-seq (n seq)
+    (let ((hd (take n seq))
+          (tl (drop n seq)))
+        (values hd tl)))
+
 
 
 ;;;
@@ -123,8 +354,8 @@
 ;;;      => ("aaa" "bbb" "ccc")
 ;;;
 (export '(split))
-(defun split (src-str &key not-empty  max (delim '(#\Space #\Tab)))
-    (flet ((delim-p (char) (find char delim)))
+(defun split (src-str &key not-empty  max (delim #\Space))
+    (flet ((delim-p (char) (char= char delim)))
         (reverse
          (let ((result nil)
                (start 0)
@@ -134,8 +365,8 @@
              (loop
                (when (and max (>= words (1- max)))
                    (return (cons (subseq src-str start) result)))
-               (setf end (position-if #'delim-p src-str :start start))
-               (setf item (subseq src-str start end))
+               (setq end (position-if #'delim-p src-str :start start))
+               (setq item (subseq src-str start end))
                (cond ((and not-empty (> (length item) 0))
                       (push item result)
                       (incf words))
@@ -143,71 +374,9 @@
                       (push item result)
                       (incf words)))
                (unless end (return result))
-               (setf start (1+ end)))))))
+               (setq start (1+ end)))))))
 
 
-;;;
-;;; (pair '("a" "b" 'c") '(1 2 3))
-;;;       => (("a" . 1) ("b" . 2) ("c" . 3))
-(export '(pair))
-(defun pair (k v)
-    (cond ((and k v)
-           (cons (cons (car k) (car v)) (pair (cdr k) (cdr v))))
-          ((or k v)
-           (error "pair:Length lists in pair"))
-          (t nil)))
-
-
-;;; From "On Lisp"
-(export '(mkstr))
-(defun mkstr (&rest args)
-    "Make a string out of the printed representations of the arguments." ; LMH
-    (with-output-to-string (s)
-      (dolist (a args) (princ a s))))
-
-;;; From "On Lisp"
-(export '(symb))
-(defun symb (&rest args)
-    "Make a symbol out of the printed representations of the arguments." ; LMH
-    (values (intern (apply #'mkstr args rest2))))
-
-
-
-;;;; Other utils from auxfns paip
-
-
-(export '(starts-with punctuation-p print-with-spaces mappend not-null
-          first-or-nil first-or-self))
-
-(defun starts-with (list x)
-    "Is x a list whose first element is x?"
-    (and (consp list) (equal (first list) x)))
-
-
-(defun punctuation-p (char)
-    (find char ".,;:`!?#-()\\\""))
-
-(defun print-with-spaces (list)
-    (mapc #'(lambda (x) (prin1 x) (princ " ")) list))
-
-
-
-(defun mappend (fn &rest lists)
-    "Apply fn to each element of lists and append the results."
-    (apply #'append (apply #'mapcar fn lists)))
-
-
-(defun not-null (x) (not (null x)))
-
-
-(defun first-or-nil (x)
-    "The first element of x if it is a list; else nil."
-    (if (consp x) (first x) nil))
-
-
-(defun first-or-self (x)
-    "The first element of x, if it is a list; else x itself."
-    (if (consp x) (first x) x))
 
 
 ;;; rest from rest (i.e. without the first two)
@@ -220,41 +389,30 @@
 
 
 
-;;;; from PATTERN MATCHING FACILITY
-
-
-(export '(flatten mklist mappend2 random-elt sum))
-
-(defun flatten (the-list)
-    "Append together elements (or lists) in the list."
-    (mappend2 #'mklist the-list))
-
-(defun mklist (x)
-    "Return x if it is a list, otherwise (x)."
-    (if (listp x)
-        x
-        (list x)))
-
-(defun mappend2 (fn the-list)
-    "Apply fn to each element of list and append the results."
-    (apply #'append (mapcar fn the-list)))
-
-
-(defun random-elt (choices)
-    "Choose an element from a list at random."
-    (elt choices (random (length choices))))
-
-
-(defun sum (values)
-    (reduce #'+ values))
-
-
-
 ;;;; Randoms
 
 (export '(random))
 (defun random (n)
     (#j:Math:floor (* (#j:Math:random) n)))
+
+
+
+;;; rotate
+;;; from stackoverflow
+;;;
+(defun rotatel (n l)
+    (append (nthcdr n l) (butlast l (- (length l) n))))
+
+(export '(rotatel))
+
+
+(defun rotater (n l)
+    (rotatel (- (length l) n) l))
+
+(export '(rotater))
+
+
+
 
 
 ;;;; EOF

@@ -1,9 +1,9 @@
-;;; DOM manipulation functions
+;;; Klib
+;;; DOM output stream
 ;;;
-;;; OUTPUT-STREAM
 ;;;
+;;; Copyright (C) 2017 mvk (github.com/vlad-km)
 ;;;
-;;; Copyright, 2017 mvk
 ;;;
 ;;;
 ;;;
@@ -32,33 +32,29 @@ HOW USE
 ;;; name - dom element id
 ;;; exists - existing dom element
 ;;;
-;;; todo:
-;;;        stream control
-;;;               -> scroll to end
-;;;               -> reset
 ;;;
-;;; ;; create stream *out
-;;; (setf *out (make-dom-output-stream))
-;;; ;; add style class
-;;; (dom-add-class *out "report-style")
-;;; ;; mount *out to current viewport
-;;; (dom-mount *div-report  (dom-output-stream *out))
-;;; ;; write to stream
-;;; (format *out "<font class='report-style'>This is a first</font><br>")
+;;; (setf *out (make-dom-output-stream))   ;; create stream *out
+;;; (dom-add-class *out "report-style")    ;; add style class
+;;; (dom-mount *div-report                 ;; mount *out to current viewport
+;;;    (dom-output-stream *out))
+;;; (format *out "This is a first<br>")    ;; write to stream
 ;;;  ...
 ;;;  ...
-;;; ;; reset stream =>
-;;; ;;      clear all inner text
-;;; ;;      the next output will begin from first position
-;;; (dom-output-stream-reset *out)
-;;;
+;;; (dom-output-stream-reset *out)         ;; reset stream
+;;;  =>
+;;;      clear all inner text
+;;;      the next output will begin from first position;;;
+
 (export '(make-dom-output-stream))
-(defun make-dom-output-stream (&key name exists (scroll t))
+
+#|
+(defun make-dom-output-stream (&key name exists (scroll t) (plain t))
     (let ((buffer))
 
         (if exists
             (setf buffer exists)
-            (setf buffer (dom-create "div" (list (cons "id" (if name name (gen-uid "output" "stream")))))))
+            (setf buffer (dom-create (if plain "pre" "div")
+                                     (list (cons "id" (if name name (gen-uid "output" "stream")))))))
 
 
         (vector 'stream
@@ -75,6 +71,36 @@ HOW USE
                         (if scroll (setf (oget buffer "scrollTop") (oget buffer "scrollHeight"))) ) )
                 'dom-stream
                 buffer)))
+|#
+
+
+(defun make-dom-output-stream (&key name exists (scroll t) (plain t))
+    (let ((buffer))
+
+        (if exists
+            (setf buffer exists)
+            (setf buffer (dom-create (if plain "pre" "div")
+                                     (list (cons "id" (if name name (gen-uid "output" "stream")))))))
+
+
+        (vector 'stream
+                ;; write-char
+                (lambda (ch)
+                    (let* ((span (dom-create "span")))
+                        (setf (oget span "innerHTML") (string ch))
+                        (funcall ((oget buffer "appendChild" "bind" ) buffer span))))
+                ;; write-string
+                (lambda (string)
+                    (let* ((span (dom-create "span")))
+                        (setf (oget span "innerHTML") string)
+                        (funcall ((oget buffer "appendChild" "bind" ) buffer span))
+                        (if scroll (funcall ((oget buffer "scrollIntoView" "bind") buffer nil))      ) ) )
+                'dom-stream
+                buffer)))
+
+
+
+
 
 ;;;
 ;;; DOM-OUTPUT-STREAM
@@ -100,6 +126,19 @@ HOW USE
 
 
 ;;;
+;;; DOM-OUTPUT-STREAM-OPEN
+;;;
+;;; (dom-output-stream-open (dom-output-stream stream) parent-div)
+;;;
+
+(export '(dom-output-stream-open))
+(defun dom-output-stream-open (stream parent)
+    (if (arrayp stream)
+        (dom-mount parent (aref stream 4))
+        nil))
+
+
+;;;
 ;;; DOM-OUTPUT-RESET
 ;;;
 ;;; stream-reset
@@ -109,5 +148,16 @@ HOW USE
     (if (arrayp stream)
         (setf (oget  (aref stream 4) "innerHTML") "")
         nil))
+
+
+;;;
+;;; DOM-OUTPUT-STREAM-CLOSE
+;;;
+(export '(dom-output-stream-close))
+(defun dom-output-stream-close (stream)
+    (if (arrayp stream)
+        (dom-remove (aref stream 4))
+        nil))
+
 
 ;;; EOF
