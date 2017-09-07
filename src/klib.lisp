@@ -84,6 +84,14 @@
            %js-try))
 
 
+(export '(aset
+          oset
+          ensure-list
+          storage-vector-set storage-vector-ref storage-vector-p
+          list-to-vector vector-to-list
+          sequencep))
+
+
 
 (addon-provide :klib)
 
