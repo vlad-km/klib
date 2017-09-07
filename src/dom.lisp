@@ -8,23 +8,9 @@
 
 
 ;;;
-;;; Yes, this is not the jquery-way
-;;; I know about it
-;;;
-;;; Copyright, 2016-2017, mvk (github.com/vlad-km)
-;;;
-;;; Release: Pre-0.2
-;;;
-;;;
 ;;; Depends on: string.lisp
 ;;;             attic.lisp
 ;;;
-;;; Tested: Chrome/56.0 (extension)
-;;;         Electron
-;;;
-;;; Note:
-;;;     1) Some functions raise error condition because current JSCL
-;;;        was not correct processing null from JS
 ;;;
 
 
@@ -75,11 +61,6 @@
 ;;; window.document.body
 ;;;
 
-;;;
-;;; A bad idea is to yank the body house every time - (dom-get-body)
-;;; its constant
-;;;        1000 calls (dom-get-body) => Elapsed 0.011 sec
-;;;        1000 refs *dom-body* => Elapsed 0.003 sec
 ;;;
 (export '(*dom-body*))
 (defparameter *dom-body* #j:window:document:body)
