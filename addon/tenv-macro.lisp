@@ -5,19 +5,18 @@
 ;;;
 ;;; see tenv.lisp for details
 ;;;
-;;; Tenv API
+;;; Tenv macro forms for API
 ;;;
 
 ;;;
 ;;; (test (= (progn 1) 1))
 ;;; (test (let () t))
-;;; (test (warn "Message"))
 ;;;
 ;;; May be use format on body test unit
-;;;
+;;; in this case, skip six spaces before own msg for to save the basic format
 ;;;   (test
 ;;;      (let ()
-;;;       (format t ...)
+;;;       (format t "      ~a ..." n )
 ;;;        (dotimes ...) t))
 ;;;
 ;;;
@@ -27,7 +26,7 @@
 ;;;     (format t "Stage 1")
 ;;;     (test ....)
 ;;;
-;;;     (format t "Stage end")
+;;;     (format t "Stage 1 end")
 ;;;     (test ...)
 ;;;     (batch-end) )
 ;;;
@@ -39,29 +38,39 @@
 ;;;
 ;;; (test something there)
 ;;;
-(defmacro test (condition)
-    `(tenv/test-fn (lambda () ,condition) ',condition  0))
+(defmacro test (expr)
+    `(tenv/worker (lambda () ,expr) ',expr  0))
 
 ;;;
 ;;; (expected-failure (fail))
 ;;;
-(defmacro expected-failure (condition)
-    `(tenv/test-fn (lambda () ',condition) ',condition 1))
+(defmacro expected-failure (expr)
+    `(tenv/worker (lambda () ,expr) ',expr 1))
 
 ;;;
 ;;; (test-equal (gethash frob::key frob::ht) 1234)
 ;;;
-(defmacro test-equal (form value)
-    `(tenv/test (equal ,form ,value )))
+;;; Note: Not some good.
+;;;       Rather so:  (test (= expr expeced))
+;;;
+(defmacro test-equal (expr expected)
+    `(tenv/worker (lambda () (equal ,expr ,expected )) ',expr 0))
 
 ;;;
 ;;; Batch-begin
 ;;;
 ;;; Recomended begining for any test batch
 ;;;
+;;; (batch-begin)
+;;;   (test )
+;;;   (test)
+;;;   (test)
+;;; (batch-end)
+;;;
+
 (defmacro batch-begin (header)
     (declare (ignore header))
-    `(tenv/set-timestamp))
+    `(tenv/timestamp))
 
 ;;;
 ;;; Batch-end
@@ -69,11 +78,13 @@
 ;;; Print run-time statistic for the test batch
 ;;;
 (defmacro batch-end ()
-    `(tenv/reports))
+    `(tenv/closing))
 
 
 ;;;
 ;;; test-load name
 ;;;
+;;; Load lisp source file with test definition
+;;;
 (defmacro test-load (name)
-    `(tenv/load-tb ,name))
+    `(tenv/load ,name))
