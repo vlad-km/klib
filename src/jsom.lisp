@@ -5,13 +5,6 @@
 ;;;
 ;;; Copyright (C) 2017 mvk (github.com/vlad-km)
 ;;;
-;;;
-;;;
-;;;
-;;; Release: Pre-0.2
-;;;
-;;; Tested: Chrome/56.0 (extension)
-;;;         Electron
 
 
 
@@ -22,19 +15,21 @@
 ;;; => {name: "val", next: {name2: "val2"}}
 ;;;
 
-(export '(make-js-object))
-(defun make-js-object (&rest kv)
+(defun make-js-obj (&rest kv)
     (let* ((obj (new))
            (idx 0)
            (key-val))
         (if (oddp (length kv))
-            (error "make-js-object: length of args not even - ~a" (length kv) ))
-        (map nil (lambda (el)
-                     (cond ((oddp idx)
-                            (setf (oget obj key-val) el))
-                           (t (setf key-val el) ))
-                     (incf idx)) kv)
+            (error "make-js-object: length of the arguments list not even - ~a" (length kv) ))
+        (dolist (it kv)
+            (if (oddp idx)
+                (setf (oget obj key-val) it)
+                (setq key-val it))
+            (incf idx))
         obj))
+
+(fset 'mkjso #'make-js-object)
+(export '(make-js-object mkjso))
 
 
 ;;; map-js-object
@@ -58,9 +53,12 @@
 ;;;
 ;;; => ("bbb" "aaa")
 ;;;
-(export '(get-js-object-keys))
+
 (defun get-js-object-keys (js-object)
     (map 'list #'(lambda (x) (js-to-lisp x)) (#j:Object:keys js-object)))
+
+(fset 'jso-keys #'get-js-object-keys)
+(export '(get-js-object-keys jso-keys))
 
 
 ;;; js-object-to-list
@@ -72,5 +70,37 @@
 (defun js-object-to-list (obj)
     (mapcar #'(lambda (x) (list x (oget obj x)))
             (map 'list #'(lambda (x) (js-to-lisp x)) (#j:Object:keys obj))))
+
+
+
+;;;
+;;; copies js object
+;;; returning a new object with inherite propertiess
+;;;
+
+(fset '%jso-assign #j:Object:assign)
+
+(defun jso-copy (obj)
+    (#j:Object:assign (new) obj))
+
+(export '(jso-copy))
+
+;;;
+;;; Merge few objects to new object
+;;;
+;;; The identical properties are replaced
+;;; See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/assign
+;;; for details
+;;;
+(defun jso-merge (&rest objs)
+    (apply '%jso-assign (new) objs))
+(export '(jso-merge))
+
+
+;;;
+;;; delete properties from obj
+;;; use (delete-property key obj) from JSCL
+;;;
+
 
 ;;;; EOF
