@@ -28,15 +28,7 @@
 ;;;;
 ;;;; Status:  Sketch
 ;;;;
-;;;; Use
 ;;;;
-;;;; 1. Addon Moren IDE. File: tenv.js, tenv-macro.lisp. Separated load as resource from ide console, or programm
-;;;;
-;;;; 2. For compilation and execution of a separate application without Moren/environment (pure JSCL).
-;;;;    Files: tenv.lisp, tenv-macro.lisp.
-;;;;
-;;;;
-;;;; Have a fun
 ;;;;
 
 
@@ -107,8 +99,6 @@
 ;;;
 ;;; Worker
 ;;;
-;;; Todo: Not the best idea to use sexpr as unit descriptor
-;;;
 
 ;;; reduce long sexpr for print
 ;;; something like "xxx xxx xxxxxx" => "xxxx ... xxx"
@@ -144,10 +134,6 @@
                       end-time (get-internal-real-time)
                       elapsed (- end-time start-time)
                       secs (/ elapsed internal-time-units-per-second 1.0))
-
-                ;;(format t "~%<font color='yellow'>     Start ~a End ~a Elapsed ~a</font>"
-                ;;  start-time end-time (- end-time start-time))
-
                 (push (- end-time start-time) *execute-timer*)
                 (cond
                   (result
@@ -205,16 +191,8 @@
     (unless (zerop *unexpected-passes*)
         (format t "<font color='yellow'>~a test(s) passed unexpectedly.</font>~%" *unexpected-passes*))
 
-    ;;(format t "~a~%" *execute-timer*)
     (format t "Done~%" ))
 
 
-
-;;;
-;;;
-
-(addon-provide :tenv)
-
-(/debug "Tenv loaded")
 
 ;;; EOF

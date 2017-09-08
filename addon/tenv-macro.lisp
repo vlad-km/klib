@@ -1,9 +1,6 @@
 ;;; -*- mode:lisp;  coding:utf-8 -*-
 
-;;;
-;;; Part of the addon Moren IDE - Tenv
-;;;
-;;; see tenv.lisp for details
+;;; See tenv.lisp for details
 ;;;
 ;;; Tenv macro forms for API
 ;;;
