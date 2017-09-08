@@ -1,8 +1,7 @@
 ;;; -*- mode:lisp; coding:utf-8 -*-
+
 ;;;
 ;;; Klib
-;;;
-;;; Copyright (C) 2017 mvk (github.com/vlad-km)
 ;;;
 
 ;;;

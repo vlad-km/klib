@@ -1,4 +1,4 @@
-# Kernel library for minimal JSCL console ide
+# Kernel library for minimal JSCL environment 
 
 JSCL is a Common Lisp to Javascript compiler, which is bootstrapped
 from Common Lisp and executed from the browser.
@@ -34,7 +34,7 @@ and call in you Lisp:
 1. March, 2017 - see branch klib-master-03-2017
 
 
-Copyright, 2017, mvk
+Copyleft, 2017, mvk
 As is, with no guarantees
 
 *Have a fun*
