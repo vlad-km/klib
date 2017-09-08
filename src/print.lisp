@@ -10,8 +10,6 @@
 ;;; format-hexal
 ;;; format-binary
 ;;;
-;;; Copyleft (C) 2017 mvk (github.com/vlad-km)
-;;;
 ;;;
 
 

@@ -1,13 +1,11 @@
 ;;; -*- mode:lisp;  coding:utf-8 -*-
+
 ;;;
 ;;; Klib
 ;;; Resource loader (js & css) function
 ;;;
 ;;;
-;;; Copyright (C) 2017 mvk (github.com/vlad-km)
-;;;
-;;;
-;;;
+;;
 ;;;
 
 
@@ -21,8 +19,7 @@
 ;;;         (resource-loader :css "/css/calendar.css")
 ;;;
 ;;;
-;;; See cm-plug.lisp as example as load too many resources
-;;;
+
 (export '(resource-loader))
 (defun resource-loader (what from &optional onload)
     (let* ((link nil)
@@ -44,3 +41,5 @@
                                (funcall onload from))))
         (dom-append *dom-body* link)
         (unless onload (if (equal what :script) (dom-remove link)))))
+
+;;; EOF

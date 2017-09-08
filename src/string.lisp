@@ -2,19 +2,6 @@
 ;;; Wrapper for JS String functions
 ;;;
 ;;;
-;;; Copyright (C) 2017 mvk (github.com/vlad-km)
-;;;
-;;;
-;;;
-;;;
-;;; Release: Pre-0.1
-;;;
-
-;;;
-;;;
-;;;           Use the Force, Luke
-;;;           Or, try to think
-;;;                   (c) a long time ago, himself  your know who
 ;;;
 
 ;;; toLowerCase() / toUpperCase()

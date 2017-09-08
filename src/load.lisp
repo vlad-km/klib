@@ -1,17 +1,8 @@
 ;;; -*- mode:lisp;  coding:utf-8 -*-
+
 ;;;
 ;;; Klib
 ;;; function 'load'
-;;;
-;;; Copyright (C) 2017 mvk (github.com/vlad-km)
-;;;
-;;;
-;;;
-;;;
-;;; Release: Pre-0.2
-;;;
-;;; Tested: Chrome/56.0 (extension)
-;;;         Electron
 ;;;
 ;;;
 
@@ -34,17 +25,10 @@
 ;;;    2. In extension mode, not need use webserver for accessed to local resources.
 ;;;       All resources should placed inside directory where from the extension installed
 ;;;
-;;; Important:
-;;;
-;;;    Behavior of a function compiled via compile-application (from jscl:bootstrap) and compiled when
-;;;    downloading the source code in the browser may vary considerably.
-;;;    You are warned.
 ;;;
 
 (export '(xhr-receive))
 (defun xhr-receive (uri fn-ok &optional fn-err)
-    ;; make-new call
-    ;;(let* ((req (#j:opNew #j:window "XMLHttpRequest")))
     (let* ((req (make-new #j:XMLHttpRequest)))
         (funcall ((oget req "open" "bind") req "GET" uri t))
         (funcall ((oget req "setRequestHeader" "bind") req "Cache-Control" "no-cache"))
@@ -85,7 +69,6 @@
                      form-num  (or (oget err "message") err)))
          (finally
           (if verbose (format t "Finallyse~%"))
-          ;;(if (and w-err ready) (funcall ready))
           (cond (w-err
                  (if ready (funcall ready) (print 'Done)))
                 (t
@@ -101,7 +84,6 @@
     (xhr-receive  name
                   (lambda (input)
                       (%%load-form-eval
-                       ;;(substitute #\Space (code-char 13) input)
                        (string-replace input *ldr-rpl-patt* " ")
                        :verbose verbose
                        :ready ready
@@ -109,3 +91,6 @@
                   (lambda (uri status)
                       (format t "~%Load: Can't load ~s. Status: ~a~%" uri status)) )
     (values-list nil))
+
+
+;;; EOF

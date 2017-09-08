@@ -2,8 +2,6 @@
 ;;; DOM output stream
 ;;;
 ;;;
-;;; Copyright (C) 2017 mvk (github.com/vlad-km)
-;;;
 ;;;
 ;;;
 ;;;
@@ -46,33 +44,6 @@ HOW USE
 ;;;      the next output will begin from first position;;;
 
 (export '(make-dom-output-stream))
-
-#|
-(defun make-dom-output-stream (&key name exists (scroll t) (plain t))
-    (let ((buffer))
-
-        (if exists
-            (setf buffer exists)
-            (setf buffer (dom-create (if plain "pre" "div")
-                                     (list (cons "id" (if name name (gen-uid "output" "stream")))))))
-
-
-        (vector 'stream
-                ;; write-char
-                (lambda (ch)
-                    (let* ((span (dom-create "span")))
-                        (setf (oget span "innerHTML") (string ch))
-                        (funcall ((oget buffer "appendChild" "bind" ) buffer span))))
-                ;; write-string
-                (lambda (string)
-                    (let* ((span (dom-create "span")))
-                        (setf (oget span "innerHTML") string)
-                        (funcall ((oget buffer "appendChild" "bind" ) buffer span))
-                        (if scroll (setf (oget buffer "scrollTop") (oget buffer "scrollHeight"))) ) )
-                'dom-stream
-                buffer)))
-|#
-
 
 (defun make-dom-output-stream (&key name exists (scroll t) (plain t))
     (let ((buffer))

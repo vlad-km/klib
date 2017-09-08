@@ -1,14 +1,10 @@
 ;;; -*- mode:lisp; coding:utf-8 -*-
+
 ;;;
 ;;; Klib
 ;;; Wrapper for JS Websocket API
 ;;;
-;;; Release: Pre-0.1
 ;;;
-;;;
-;;;
-;;;
-
 
 ;;;
 ;;; open socket
@@ -105,12 +101,6 @@
 
 
 
-;;;
-;;; install :trivial-ws-feature *features*
-;;;
-;;; Another addon should check *features* and make a decision about the continuation
-;;; with the issuance of diagnostics
-;;;
 (addon-provide :tws)
 
 ;;; EOF
