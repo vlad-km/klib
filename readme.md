@@ -1,3 +1,8 @@
+# Status
+
+**The project is closed**
+
+
 # Kernel library for minimal JSCL environment 
 
 JSCL is a Common Lisp to Javascript compiler, which is bootstrapped
